@@ -1,0 +1,37 @@
+random_state: 42
+
+dataset:
+  n_samples: 1200
+  n_features: 12
+  n_informative: 8
+  n_redundant: 2
+  class_sep: 1.4
+  random_state: 42
+  test_size: 0.25
+  stratify: true
+
+preprocess:
+  drop_duplicates: true
+  drop_constant: true
+  impute_numeric: true
+  clip_percentiles: [1, 99]
+  binary_map: {}
+
+features:
+  target_col: "target"
+
+model_params:
+  model_type: "logreg"
+  random_state: 42
+  logreg:
+    C: 1.2
+    max_iter: 200
+  rf:
+    n_estimators: 160
+    max_depth: 7
+  tree:
+    max_depth: 6
+
+train:
+  scoring: "roc_auc"
+  save_dir: "models"
