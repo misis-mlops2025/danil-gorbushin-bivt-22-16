@@ -189,3 +189,14 @@ cython_debug/
 
 # PyPI configuration file
 .pypirc
+
+.git
+.venv
+__pycache__
+*.pyc
+tests
+data
+models
+notebooks
+reports
+.dvc
