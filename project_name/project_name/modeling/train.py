@@ -1,23 +1,25 @@
 from __future__ import annotations
-from pathlib import Path
+
 import json
+from pathlib import Path
 
 import joblib
+from loguru import logger
 import numpy as np
 import pandas as pd
-from loguru import logger
 from sklearn.metrics import accuracy_score, f1_score, roc_auc_score
 import typer
 
-from project_name.config import MODELS_DIR, PROCESSED_DATA_DIR, load_config, CONFIG_DIR
+from project_name.config import CONFIG_DIR, MODELS_DIR, PROCESSED_DATA_DIR, load_config
 
 app = typer.Typer(add_completion=False)
 
 
 def make_model(model_type: str, random_state: int, params: dict):
-    from sklearn.linear_model import LogisticRegression
     from sklearn.ensemble import RandomForestClassifier
+    from sklearn.linear_model import LogisticRegression
     from sklearn.tree import DecisionTreeClassifier
+
     if model_type == "logreg":
         return LogisticRegression(random_state=random_state, **params)
     if model_type == "rf":
@@ -41,18 +43,20 @@ def _metrics(y_true, y_prob, y_pred):
 
 @app.command()
 def main(
-        config: Path = typer.Option(CONFIG_DIR / "config.yaml", "--config"),
-        features_path: Path = typer.Option(PROCESSED_DATA_DIR / "features.csv", "--features-path"),
-        labels_path: Path = typer.Option(PROCESSED_DATA_DIR / "labels.csv", "--labels-path"),
-        model_path: Path = typer.Option(MODELS_DIR / "model.pkl", "--model-path"),
-        metrics_path: Path = typer.Option(MODELS_DIR / "metrics.json", "--metrics-path"),
+    config: Path = typer.Option(CONFIG_DIR / "config.yaml", "--config"),
+    features_path: Path = typer.Option(PROCESSED_DATA_DIR / "features.csv", "--features-path"),
+    labels_path: Path = typer.Option(PROCESSED_DATA_DIR / "labels.csv", "--labels-path"),
+    model_path: Path = typer.Option(MODELS_DIR / "model.pkl", "--model-path"),
+    metrics_path: Path = typer.Option(MODELS_DIR / "metrics.json", "--metrics-path"),
 ):
     cfg = load_config(config)
 
     X = pd.read_csv(features_path)
     y = pd.read_csv(labels_path).iloc[:, 0].values
 
-    model = make_model(cfg.model_params.model_type, cfg.model_params.random_state, cfg.selected_hparams())
+    model = make_model(
+        cfg.model_params.model_type, cfg.model_params.random_state, cfg.selected_hparams()
+    )
     model.fit(X, y)
 
     if hasattr(model, "predict_proba"):

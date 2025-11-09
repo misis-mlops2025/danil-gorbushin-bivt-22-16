@@ -1,17 +1,18 @@
 from __future__ import annotations
-from sklearn.datasets import make_classification
+
 from pathlib import Path
 from typing import Any
 
-import pandas as pd
 from loguru import logger
+import pandas as pd
+from sklearn.datasets import make_classification
 from tqdm import tqdm
 import typer
 
 from project_name.config import (
+    CONFIG_DIR,
     PROCESSED_DATA_DIR,
     RAW_DATA_DIR,
-    CONFIG_DIR,
     load_config,
 )
 
@@ -58,8 +59,8 @@ def _clip_percentiles(df: pd.DataFrame, p_lo: float, p_hi: float) -> pd.DataFram
 
 
 def _apply_binary_map(
-        df: pd.DataFrame,
-        mapping: dict[str, dict[str, list[Any]]],
+    df: pd.DataFrame,
+    mapping: dict[str, dict[str, list[Any]]],
 ) -> pd.DataFrame:
     df = df.copy()
     precomputed = {
@@ -89,14 +90,16 @@ def _apply_binary_map(
 
 @app.command()
 def main(
-        config: Path = typer.Option(CONFIG_DIR / "config.yaml", "--config"),
-        input_path: Path = typer.Option(RAW_DATA_DIR / "dataset.csv", "--input-path", "-i"),
-        output_path: Path = typer.Option(PROCESSED_DATA_DIR / "dataset.csv", "--output-path", "-o"),
+    config: Path = typer.Option(CONFIG_DIR / "config.yaml", "--config"),
+    input_path: Path = typer.Option(RAW_DATA_DIR / "dataset.csv", "--input-path", "-i"),
+    output_path: Path = typer.Option(PROCESSED_DATA_DIR / "dataset.csv", "--output-path", "-o"),
 ):
     cfg = load_config(config)
 
     if not input_path.exists():
-        logger.warning(f"{input_path} not found. Generating synthetic dataset via make_classification()")
+        logger.warning(
+            f"{input_path} not found. Generating synthetic dataset via make_classification()"
+        )
         input_path.parent.mkdir(parents=True, exist_ok=True)
         X, y = make_classification(
             n_samples=cfg.dataset.n_samples,
@@ -123,11 +126,21 @@ def main(
         steps.append(("drop_constant", _drop_constant_columns))
     if cfg.preprocess.impute_numeric:
         steps.append(("impute_numeric_median", _impute_numeric_median))
-    if isinstance(cfg.preprocess.clip_percentiles, list) and len(cfg.preprocess.clip_percentiles) == 2:
-        lo, hi = float(cfg.preprocess.clip_percentiles[0]), float(cfg.preprocess.clip_percentiles[1])
-        steps.append(("clip_percentiles", lambda d, _lo=lo, _hi=hi: _clip_percentiles(d, _lo, _hi)))
+    if (
+        isinstance(cfg.preprocess.clip_percentiles, list)
+        and len(cfg.preprocess.clip_percentiles) == 2
+    ):
+        lo, hi = (
+            float(cfg.preprocess.clip_percentiles[0]),
+            float(cfg.preprocess.clip_percentiles[1]),
+        )
+        steps.append(
+            ("clip_percentiles", lambda d, _lo=lo, _hi=hi: _clip_percentiles(d, _lo, _hi))
+        )
     if cfg.preprocess.binary_map:
-        steps.append(("binary_map", lambda d, m=cfg.preprocess.binary_map: _apply_binary_map(d, m)))
+        steps.append(
+            ("binary_map", lambda d, m=cfg.preprocess.binary_map: _apply_binary_map(d, m))
+        )
 
     logger.info("Processing dataset...")
     for name, fn in tqdm(steps, total=len(steps)):

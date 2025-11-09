@@ -46,6 +46,7 @@ force-sort-within-sections = true
 
 [dependency-groups]
 dev = [
+    "dvc>=3.63.0",
     "pylint>=3.3.8",
     "pytest>=8.4.2",
     "pytest-cov>=7.0.0",

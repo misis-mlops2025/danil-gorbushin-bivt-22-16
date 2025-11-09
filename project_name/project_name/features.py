@@ -1,13 +1,15 @@
 from __future__ import annotations
+
 from pathlib import Path
 
-import pandas as pd
 from loguru import logger
+import pandas as pd
 import typer
 
-from project_name.config import PROCESSED_DATA_DIR, load_config, CONFIG_DIR
+from project_name.config import CONFIG_DIR, PROCESSED_DATA_DIR, load_config
 
 app = typer.Typer(add_completion=False)
+
 
 @app.command()
 def main(
@@ -31,6 +33,7 @@ def main(
     y.to_csv(labels_path, index=False, header=True)
 
     logger.success(f"Saved features: {features_path}  labels: {labels_path}")
+
 
 if __name__ == "__main__":
     app()

@@ -1,11 +1,12 @@
 from __future__ import annotations
-from pathlib import Path
-from typing import Literal, Any
 
-import yaml
+from pathlib import Path
+from typing import Any, Literal
+
 from dotenv import load_dotenv
 from loguru import logger
 from pydantic import BaseModel, Field, field_validator
+import yaml
 
 load_dotenv()
 
@@ -26,12 +27,14 @@ CONFIG_DIR = PROJ_ROOT / "configs"
 
 try:
     from tqdm import tqdm
+
     logger.remove(0)
     logger.add(lambda msg: tqdm.write(msg, end=""), colorize=True)
 except ModuleNotFoundError:
     pass
 
 ModelType = Literal["logreg", "rf", "tree"]
+
 
 class DatasetParams(BaseModel):
     n_samples: int = 1200
@@ -50,6 +53,7 @@ class DatasetParams(BaseModel):
             raise ValueError("test_size должен быть в диапазоне [0.05, 0.5]")
         return v
 
+
 class PreprocessParams(BaseModel):
     drop_duplicates: bool = True
     drop_constant: bool = True
@@ -57,8 +61,10 @@ class PreprocessParams(BaseModel):
     clip_percentiles: list[float] = Field(default_factory=lambda: [1.0, 99.0])
     binary_map: dict[str, dict[str, list[Any]]] = Field(default_factory=dict)
 
+
 class FeaturesParams(BaseModel):
     target_col: str = "target"
+
 
 class ModelParams(BaseModel):
     model_type: ModelType = "logreg"
@@ -67,9 +73,11 @@ class ModelParams(BaseModel):
     rf: dict[str, Any] = Field(default_factory=lambda: {"n_estimators": 160, "max_depth": 7})
     tree: dict[str, Any] = Field(default_factory=lambda: {"max_depth": 6})
 
+
 class TrainParams(BaseModel):
     scoring: Literal["roc_auc", "accuracy", "f1"] = "roc_auc"
     save_dir: str = "models"
+
 
 class Config(BaseModel):
     random_state: int = 42
@@ -82,6 +90,7 @@ class Config(BaseModel):
     def selected_hparams(self) -> dict[str, Any]:
         mt = self.model_params.model_type
         return self.model_params.model_dump()[mt]
+
 
 def load_config(config_path: str | Path = CONFIG_DIR / "config.yaml") -> Config:
     path = Path(config_path)
