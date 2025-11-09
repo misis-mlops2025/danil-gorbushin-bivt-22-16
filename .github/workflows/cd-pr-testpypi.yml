@@ -1,8 +1,8 @@
-name: CD - Build & Publish to TestPyPI on PR to master
+name: CD - Build & Publish to TestPyPI on PR to main
 
 on:
   pull_request:
-    branches: [ "master", "main" ]
+    branches: [ "main", "master" ]
     types: [opened, reopened, synchronize]
 
 jobs:
@@ -22,7 +22,8 @@ jobs:
           python -m pip install --upgrade pip
           pip install build
 
-      - name: Bump version for PR build (append .dev<run>)
+      - name: Bump version for PR build
+        working-directory: project_name
         shell: bash
         run: |
           BASE_VER=$(grep '^version = ' pyproject.toml | head -1 | sed 's/version = "\(.*\)"/\1/')
@@ -31,6 +32,7 @@ jobs:
           echo "Version for PR build: ${NEW_VER}"
 
       - name: Build sdist & wheel
+        working-directory: project_name
         run: python -m build
 
       - name: Publish to TestPyPI
@@ -40,9 +42,10 @@ jobs:
           password: ${{ secrets.TEST_PYPI_API_TOKEN }}
           repository-url: https://test.pypi.org/legacy/
           skip-existing: true
+          packages-dir: project_name/dist
 
       - name: Upload dist as artifact
         uses: actions/upload-artifact@v4
         with:
           name: dist
-          path: dist/*
+          path: project_name/dist/*
