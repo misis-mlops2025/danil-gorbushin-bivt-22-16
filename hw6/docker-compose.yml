@@ -1,0 +1,158 @@
+services:
+  airflow-postgres:
+    image: postgres:13
+    container_name: hw6_airflow_postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - hw6_airflow_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  mlflow:
+    build:
+      context: ./mlflow
+    image: hw6_mlflow:latest
+    container_name: hw6_mlflow
+    user: "0:0"
+    ports:
+      - "5000:5000"
+    volumes:
+      - hw6_mlflow_data:/mlflow
+      - hw6_mlflow_artifacts:/mlflow/artifacts
+    command:
+      - bash
+      - -lc
+      - >
+        mkdir -p /mlflow/artifacts;
+        chmod -R 777 /mlflow/artifacts || true;
+        mlflow server
+        --host 0.0.0.0
+        --port 5000
+        --backend-store-uri sqlite:////mlflow/mlflow.db
+        --serve-artifacts
+        --artifacts-destination /mlflow/artifacts
+    restart: unless-stopped
+
+  airflow-webserver:
+    build:
+      context: ./airflow
+    image: hw6_airflow:latest
+    container_name: hw6_airflow_webserver
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      AIRFLOW__CORE__FERNET_KEY: "44Ac-6iugJLLSmpDMCsj9gYutf3qxUtdG028pUnH33k="
+      AIRFLOW__WEBSERVER__SECRET_KEY: "hw6_secret_key_12345"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.session"
+      AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "true"
+      MLFLOW_TRACKING_URI: "http://mlflow:5000"
+      PYTHONPATH: "/opt/airflow/hw6/src"
+      GIT_PYTHON_REFRESH: "quiet"
+    volumes:
+      - hw6_airflow_logs:/opt/airflow/logs
+      - ./airflow/dags:/opt/airflow/dags
+      - ./:/opt/airflow/hw6
+    ports:
+      - "8080:8080"
+    command:
+      - bash
+      - -lc
+      - "/home/airflow/.local/bin/airflow webserver"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 10s
+      retries: 30
+    restart: unless-stopped
+
+  airflow-init:
+    build:
+      context: ./airflow
+    image: hw6_airflow:latest
+    container_name: hw6_airflow_init
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      mlflow:
+        condition: service_started
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      AIRFLOW__CORE__FERNET_KEY: "44Ac-6iugJLLSmpDMCsj9gYutf3qxUtdG028pUnH33k="
+      AIRFLOW__WEBSERVER__SECRET_KEY: "hw6_secret_key_12345"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.session"
+      MLFLOW_TRACKING_URI: "http://mlflow:5000"
+      PYTHONPATH: "/opt/airflow/hw6/src"
+      GIT_PYTHON_REFRESH: "quiet"
+    volumes:
+      - hw6_airflow_logs:/opt/airflow/logs
+      - ./airflow/dags:/opt/airflow/dags
+      - ./:/opt/airflow/hw6
+    user: "50000:0"
+    command:
+      - bash
+      - -lc
+      - >
+        set -e;
+        /home/airflow/.local/bin/airflow db migrate;
+        /home/airflow/.local/bin/airflow users create
+        --username admin
+        --password admin
+        --firstname Admin
+        --lastname User
+        --role Admin
+        --email admin@example.com
+        || /home/airflow/.local/bin/airflow users reset-password -u admin -p admin
+    restart: "no"
+
+  airflow-scheduler:
+    build:
+      context: ./airflow
+    image: hw6_airflow:latest
+    container_name: hw6_airflow_scheduler
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+      airflow-init:
+        condition: service_completed_successfully
+      mlflow:
+        condition: service_started
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      AIRFLOW__CORE__FERNET_KEY: "44Ac-6iugJLLSmpDMCsj9gYutf3qxUtdG028pUnH33k="
+      AIRFLOW__WEBSERVER__SECRET_KEY: "hw6_secret_key_12345"
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__API__AUTH_BACKENDS: "airflow.api.auth.backend.session"
+      MLFLOW_TRACKING_URI: "http://mlflow:5000"
+      PYTHONPATH: "/opt/airflow/hw6/src"
+      GIT_PYTHON_REFRESH: "quiet"
+    volumes:
+      - hw6_airflow_logs:/opt/airflow/logs
+      - ./airflow/dags:/opt/airflow/dags
+      - ./:/opt/airflow/hw6
+    command:
+      - bash
+      - -lc
+      - "/home/airflow/.local/bin/airflow scheduler"
+    restart: unless-stopped
+
+volumes:
+  hw6_airflow_postgres_data:
+  hw6_airflow_logs:
+  hw6_mlflow_data:
+  hw6_mlflow_artifacts:
