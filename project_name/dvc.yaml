@@ -1,0 +1,63 @@
+stages:
+  process:
+    cmd: uv run -m project_name.dataset --config configs/config.yaml --input-path data/raw/dataset.csv --output-path data/processed/dataset.csv
+    deps:
+      - project_name/dataset.py
+      - configs/config.yaml
+    params:
+      - configs/config.yaml:
+          - dataset.n_samples
+          - dataset.n_features
+          - dataset.n_informative
+          - dataset.n_redundant
+          - dataset.n_repeated
+          - dataset.n_classes
+          - dataset.flip_y
+          - dataset.random_state
+          - dataset.test_size
+          - dataset.clip_percentiles
+          - dataset.binary_map
+    outs:
+      - data/processed/dataset.csv
+
+  features:
+    cmd: uv run -m project_name.features --config configs/config.yaml --input-path data/processed/dataset.csv --features-path data/processed/features.csv --labels-path data/processed/labels.csv
+    deps:
+      - project_name/features.py
+      - data/processed/dataset.csv
+      - configs/config.yaml
+    outs:
+      - data/processed/features.csv
+      - data/processed/labels.csv
+
+  train:
+    cmd: uv run -m project_name.modeling.train --config configs/config.yaml --features-path data/processed/features.csv --labels-path data/processed/labels.csv --model-path models/model.pkl --metrics-path models/metrics.json
+    deps:
+      - project_name/modeling/train.py
+      - data/processed/features.csv
+      - data/processed/labels.csv
+      - configs/config.yaml
+    params:
+      - configs/config.yaml:
+          - model_params.model_type
+          - model_params.random_state
+          - model_params.logreg
+          - model_params.rf
+          - model_params.tree
+          - train.cv_folds
+          - train.scoring
+          - train.save_proba
+    outs:
+      - models/model.pkl
+    metrics:
+      - models/metrics.json:
+          cache: false
+
+  predict:
+    cmd: uv run -m project_name.modeling.predict --features-path data/processed/features.csv --model-path models/model.pkl --predictions-path data/processed/predictions.csv
+    deps:
+      - project_name/modeling/predict.py
+      - data/processed/features.csv
+      - models/model.pkl
+    outs:
+      - data/processed/predictions.csv

@@ -1,0 +1,65 @@
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.module]
+name = "project_name"
+
+[project]
+name = "project-name-danikfml"
+version = "0.0.1"
+description = "A short description of the project."
+authors = [
+  { name = "Danil Gorbushin" },
+]
+
+readme = "README.md"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    
+]
+dependencies = [
+    "loguru",
+    "mkdocs",
+    "numpy>=2.3.3",
+    "pandas>=2.3.3",
+    "pip",
+    "pydantic>=2.11.10",
+    "python-dotenv",
+    "pyyaml>=6.0.3",
+    "ruff",
+    "scikit-learn>=1.7.2",
+    "tqdm",
+    "typer",
+]
+requires-python = "~=3.12.0"
+
+
+[tool.ruff]
+line-length = 99
+src = ["project_name"]
+include = ["pyproject.toml", "project_name/**/*.py"]
+
+[tool.ruff.lint]
+extend-select = ["I"]  # Add import sorting
+
+[tool.ruff.lint.isort]
+known-first-party = ["project_name"]
+force-sort-within-sections = true
+
+[dependency-groups]
+dev = [
+    "dvc>=3.63.0",
+    "pylint>=3.3.8",
+    "pytest>=8.4.2",
+    "pytest-cov>=7.0.0",
+    "ruff>=0.13.3",
+]
+
+[project.scripts]
+prep-data = "project_name.dataset:app"
+make-features = "project_name.features:app"
+train-model = "project_name.modeling.train:app"
+predict-model = "project_name.modeling.predict:app"
+
+

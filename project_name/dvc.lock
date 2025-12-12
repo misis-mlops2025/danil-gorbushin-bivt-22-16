@@ -1,0 +1,128 @@
+schema: '2.0'
+stages:
+  process:
+    cmd: uv run -m project_name.dataset --config configs/config.yaml 
+      --input-path data/raw/dataset.csv --output-path data/processed/dataset.csv
+    deps:
+    - path: configs/config.yaml
+      hash: md5
+      md5: 14be5dfdf825ccc805a70500dd2f52f1
+      size: 461
+    - path: project_name/dataset.py
+      hash: md5
+      md5: fa929f84987a221dd4bc5a06edfd7b48
+      size: 4995
+    params:
+      configs/config.yaml:
+        dataset.binary_map: {}
+        dataset.clip_percentiles:
+        - 1.0
+        - 99.0
+        dataset.flip_y: 0.01
+        dataset.n_classes: 2
+        dataset.n_features: 12
+        dataset.n_informative: 6
+        dataset.n_redundant: 2
+        dataset.n_repeated: 0
+        dataset.n_samples: 500
+        dataset.random_state: 42
+        dataset.test_size: 0.2
+    outs:
+    - path: data/processed/dataset.csv
+      hash: md5
+      md5: c7d2472551716644385b743738b6e339
+      size: 278525
+  features:
+    cmd: uv run -m project_name.features --config configs/config.yaml 
+      --input-path data/processed/dataset.csv --features-path 
+      data/processed/features.csv --labels-path data/processed/labels.csv
+    deps:
+    - path: configs/config.yaml
+      hash: md5
+      md5: 14be5dfdf825ccc805a70500dd2f52f1
+      size: 461
+    - path: data/processed/dataset.csv
+      hash: md5
+      md5: c7d2472551716644385b743738b6e339
+      size: 278525
+    - path: project_name/features.py
+      hash: md5
+      md5: b6dea2e8b8f13fe3e8b89034e1372c2b
+      size: 1196
+    outs:
+    - path: data/processed/features.csv
+      hash: md5
+      md5: b96ad2879dcd87b73142672555e00f61
+      size: 275971
+    - path: data/processed/labels.csv
+      hash: md5
+      md5: 03eb21ff0a365b65dea913581bf6981b
+      size: 3608
+  train:
+    cmd: uv run -m project_name.modeling.train --config configs/config.yaml 
+      --features-path data/processed/features.csv --labels-path 
+      data/processed/labels.csv --model-path models/model.pkl --metrics-path 
+      models/metrics.json
+    deps:
+    - path: configs/config.yaml
+      hash: md5
+      md5: 14be5dfdf825ccc805a70500dd2f52f1
+      size: 461
+    - path: data/processed/features.csv
+      hash: md5
+      md5: b96ad2879dcd87b73142672555e00f61
+      size: 275971
+    - path: data/processed/labels.csv
+      hash: md5
+      md5: 03eb21ff0a365b65dea913581bf6981b
+      size: 3608
+    - path: project_name/modeling/train.py
+      hash: md5
+      md5: fbe9f3683064b0a6de276de58419baa4
+      size: 2691
+    params:
+      configs/config.yaml:
+        model_params.logreg:
+          C: 1.0
+          max_iter: 200
+        model_params.model_type: logreg
+        model_params.random_state: 42
+        model_params.rf:
+          n_estimators: 200
+          max_depth: 7
+        model_params.tree:
+          max_depth: 5
+        train.cv_folds: 3
+        train.save_proba: true
+        train.scoring: roc_auc
+    outs:
+    - path: models/metrics.json
+      hash: md5
+      md5: 0e1b3cd04356fa2b7cc3313f86b524b5
+      size: 89
+    - path: models/model.pkl
+      hash: md5
+      md5: 7bf6452ac72b776445c14d6f426f1900
+      size: 1279
+  predict:
+    cmd: uv run -m project_name.modeling.predict --features-path 
+      data/processed/features.csv --model-path models/model.pkl 
+      --predictions-path data/processed/predictions.csv
+    deps:
+    - path: data/processed/features.csv
+      hash: md5
+      md5: b96ad2879dcd87b73142672555e00f61
+      size: 275971
+    - path: models/model.pkl
+      hash: md5
+      md5: 7bf6452ac72b776445c14d6f426f1900
+      size: 1279
+    - path: project_name/modeling/predict.py
+      hash: md5
+      md5: d4a5f045afd8d8e28951ce15dc58d3fd
+      size: 873
+    outs:
+    - path: data/processed/predictions.csv
+      hash: md5
+      md5: a4b53056610bad1490356fa8a8cec9db
+      size: 3612

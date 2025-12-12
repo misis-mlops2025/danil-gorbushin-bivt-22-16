@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.pytest_cache/
+
+feature_repo/data/registry.db
+feature_repo/data/online_store.db
+feature_repo/data/driver_daily_metrics.parquet
+
+mlflow/mlflow.db
+mlflow/artifacts/
+
+output/predictions/*.parquet
